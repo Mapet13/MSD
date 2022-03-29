@@ -4,13 +4,16 @@ import java.awt.*;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
+import java.lang.reflect.Type;
 import java.util.function.BiConsumer;
 
 public class Board extends JComponent implements MouseInputListener, ComponentListener {
     private static final long serialVersionUID = 1L;
     private Point[][] points;
-    private int size = 10;
-    public int editType = 0;
+    private int size = 25;
+    public int editType = 1;
+
+    int height;
 
     public Board(int length, int height) {
         addMouseListener(this);
@@ -23,26 +26,26 @@ public class Board extends JComponent implements MouseInputListener, ComponentLi
     private void initialize(int length, int height) {
         points = new Point[length][height];
 
+        this.height = height;
+
         Point.MAX_POS = length;
 
-        forEachPoint((x, y) -> points[x][y] = new Point());
+        forEachPoint((x, y) -> points[x][y] = new Point(isRoad(y, height) ? Point.Type.EMPTY : Point.Type.GRASS));
         forEachPoint((x, y) -> points[x][y].next = points[x == points.length - 1 ? 0 : x + 1][y]);
     }
 
     public void iteration() {
         forEachPoint((x, y) -> points[x][y].reset());
-
-        forEachPoint((x, y) -> points[x][y].move_random());
-        forEachPoint((x, y) -> points[x][y].accelerate());
+        
         forEachPoint((x, y) -> points[x][y].set_next(x, y, points));
-
+        forEachPoint((x, y) -> points[x][y].accelerate());
         forEachPoint((x, y) -> points[x][y].move());
 
         this.repaint();
     }
 
     public void clear() {
-        forEachPoint((x, y) -> points[x][y].clear());
+        forEachPoint((x, y) -> { if (isRoad(y, height)) points[x][y].clear(); });
         this.repaint();
     }
 
@@ -54,7 +57,7 @@ public class Board extends JComponent implements MouseInputListener, ComponentLi
         }
         g.setColor(Color.GRAY);
         drawNetting(g, size);
-    }
+        }
 
     private void drawNetting(Graphics g, int gridSpace) {
         Insets insets = getInsets();
@@ -79,10 +82,16 @@ public class Board extends JComponent implements MouseInputListener, ComponentLi
             for (y = 0; y < points[x].length; ++y) {
                 float a = 1.0F;
 
-                if(points[x][y].type == Point.EMPTY_TYPE)
-                    g.setColor(new Color(1.0f, 1.0f, 1.0f, 0.7f));
-                else
-                    g.setColor(new Color(0.0f, 0.0f, 0.0f, 0.7f));
+
+                g.setColor(
+                        switch(points[x][y].type) {
+                            case EMPTY -> new Color(1.0f, 1.0f, 1.0f, 0.7f);
+                            case CAR_FAST -> new Color(0.5f, 0.0f, 0.0f, 0.7f);
+                            case CAR_SLOW -> new Color(0.6f, 0.4f, 0.0f, 0.7f);
+                            case CAR_REGULAR -> new Color(0.0f, 0.0f, 0.5f, 0.7f);
+                            case GRASS -> new Color(0.0f, 0.5f, 0.0f, 0.7f);
+                        }
+                );
 
                 g.fillRect((x * size) + 1, (y * size) + 1, (size - 1), (size - 1));
             }
@@ -93,10 +102,8 @@ public class Board extends JComponent implements MouseInputListener, ComponentLi
     public void mouseClicked(MouseEvent e) {
         int x = e.getX() / size;
         int y = e.getY() / size;
-        if ((x < points.length) && (x > 0) && (y < points[x].length) && (y > 0)) {
-            if (editType == 0) {
-                points[x][y].clicked();
-            }
+        if ((x < points.length) && (x > 0) && (y < points[x].length) && (y > 0) && isRoad(y, height)) {
+            points[x][y].clicked(Point.Type.fromInt(editType));
             this.repaint();
         }
     }
@@ -110,10 +117,8 @@ public class Board extends JComponent implements MouseInputListener, ComponentLi
     public void mouseDragged(MouseEvent e) {
         int x = e.getX() / size;
         int y = e.getY() / size;
-        if ((x < points.length) && (x > 0) && (y < points[x].length) && (y > 0)) {
-            if (editType == 0) {
-                points[x][y].clicked();
-            }
+        if ((x < points.length) && (x > 0) && (y < points[x].length) && (y > 0) && isRoad(y, height)) {
+            points[x][y].clicked(Point.Type.fromInt(editType));
             this.repaint();
         }
     }
@@ -148,6 +153,10 @@ public class Board extends JComponent implements MouseInputListener, ComponentLi
                 function.accept(x, y);
             }
         }
+    }
+
+    private boolean isRoad(int y, int height) {
+        return (height / 2) - 1 <= y && y <= (height / 2) ;
     }
 
 }

@@ -4,6 +4,8 @@ import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
+import java.util.Vector;
 
 public class GUI extends JPanel implements ActionListener, ChangeListener {
     private static final long serialVersionUID = 1L;
@@ -27,7 +29,7 @@ public class GUI extends JPanel implements ActionListener, ChangeListener {
 
     public void initialize(Container container) {
         container.setLayout(new BorderLayout());
-        container.setSize(new Dimension(1024, 768));
+        container.setSize(new Dimension(1800, 220));
 
         JPanel buttonPanel = new JPanel();
 
@@ -45,11 +47,17 @@ public class GUI extends JPanel implements ActionListener, ChangeListener {
         pred.addChangeListener(this);
         pred.setValue(maxDelay - timer.getDelay());
 
+        drawType = new JComboBox<>(new Vector<>(Arrays.stream(Point.Type.values()).map(Point.Type::getValue).toList()));
+        drawType.addActionListener(this);
+        drawType.setActionCommand("drawType");
+
         buttonPanel.add(start);
         buttonPanel.add(clear);
+        buttonPanel.add(drawType);
         buttonPanel.add(pred);
 
-        board = new Board(1024, 768 - buttonPanel.getHeight());
+
+        board = new Board(1800, 220 - buttonPanel.getHeight());
         container.add(board, BorderLayout.CENTER);
         container.add(buttonPanel, BorderLayout.SOUTH);
     }
@@ -79,8 +87,7 @@ public class GUI extends JPanel implements ActionListener, ChangeListener {
                 board.clear();
                 frame.setTitle("Cellular Automata Toolbox");
             } else if (command.equals("drawType")) {
-                int newType = (Integer) drawType.getSelectedItem();
-                board.editType = newType;
+                board.editType = (Integer) drawType.getSelectedItem();
             }
 
         }
